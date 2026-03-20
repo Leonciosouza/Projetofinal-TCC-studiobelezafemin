@@ -95,4 +95,6 @@ public class ServicoService {
 
     }
 
+    public Object buscarPorId(Long id) {
+    }
 }
