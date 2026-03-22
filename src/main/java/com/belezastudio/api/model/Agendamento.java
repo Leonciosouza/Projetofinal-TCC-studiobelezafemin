@@ -3,6 +3,9 @@ package com.belezastudio.api.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 @Data
 @Entity
 @Table(name="agendamentos")

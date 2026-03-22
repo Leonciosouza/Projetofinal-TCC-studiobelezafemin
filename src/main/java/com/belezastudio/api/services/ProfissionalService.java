@@ -4,7 +4,9 @@ package com.belezastudio.api.services;
 import com.belezastudio.api.dto.ProfissionalRequestDTO;
 import com.belezastudio.api.dto.ProfissionalResponseDTO;
 import com.belezastudio.api.model.Profissional;
+import com.belezastudio.api.model.Usuario;
 import com.belezastudio.api.repositories.ProfissionalRepository;
+import com.belezastudio.api.repositories.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,7 +57,7 @@ public class ProfissionalService {
     // READ (Todos)
     public List<ProfissionalResponseDTO> listarTodos() {
         return profissionalRepository.findAll().stream()
-                .map(this::conveterParaDTO)
+                .map(this::converterParaDTO)
                 .collect(Collectors.toList());
     }
     // READ (Por ID).
@@ -67,7 +69,7 @@ public class ProfissionalService {
 
     // UPDATE.
     @Transactional
-    public ProfissionalResponseDTO atualizarProfissional(Long id, ProfisionalRequestDTO dto) {
+    public ProfissionalResponseDTO atualizarProfissional(Long id, ProfissionalRequestDTO dto) {
         Profissional profissional = profissionalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
 
@@ -87,6 +89,7 @@ public class ProfissionalService {
     }
 
     // DELETE.
+    @Transactional
     public void deletarProfissional(Long id) {
         if (!profissionalRepository.existsById(id)) {
             throw new RuntimeException("Profissional não encontrado");

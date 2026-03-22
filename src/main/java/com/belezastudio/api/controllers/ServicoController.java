@@ -42,7 +42,7 @@ public class ServicoController {
     public ResponseEntity<?> buscarPorId(@PathVariable Long id){
         try {
             return ResponseEntity.ok(servicoService.buscarPorId(id));
-        } catch (RuntimeException e ) {
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }

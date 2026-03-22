@@ -23,6 +23,5 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             @Param("horaInicio") LocalTime horaInicio,
             @Param("horaFim")  LocalTime horaFim);
 
-
-
+    
 }

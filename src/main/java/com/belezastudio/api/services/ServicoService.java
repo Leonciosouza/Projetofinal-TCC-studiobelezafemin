@@ -3,7 +3,9 @@ package com.belezastudio.api.services;
 
 import com.belezastudio.api.dto.ServicoRequestDTO;
 import com.belezastudio.api.dto.ServicoResponseDTO;
+import com.belezastudio.api.model.Profissional;
 import com.belezastudio.api.model.Servico;
+import com.belezastudio.api.repositories.ProfissionalRepository;
 import com.belezastudio.api.repositories.ServicoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,16 +20,16 @@ public class ServicoService {
     private ServicoRepository servicoRepository;
 
     @Autowired
-    private ProfissionalRespository profissionalRespository;
+    private ProfissionalRepository profissionalRepository;
 
     // CREATE.
     public  ServicoResponseDTO cadastrarServico(ServicoRequestDTO dto) {
         // Busca o profissional no banco para garantir que ele existe.
-        Profissional profissional = profissionalRespository.findById(dto.idProfissional())
+        Profissional profissional = profissionalRepository.findById(dto.idProfissional())
                 .orElseThrow(() -> new RuntimeException("Profissional não encontrado para o ID informado."));
 
         Servico servico = new Servico();
-        servico setNome(dto.nome());
+        servico.setNome(dto.nome());
         servico.setDescricao(dto.descricao());
         servico.setDuracaoMinutos(dto.duracaoMinutos());
         servico.setPrecoPadrao(dto.precoPadrao());
@@ -59,7 +61,7 @@ public class ServicoService {
 
         // Se o ID do profissional mudar, precisamos buscar o novo profissional.
         if(!servico.getProfissional().getIdProfissional().equals(dto.idProfissional())) {
-            Profissional novoProfissional = profissionalRespository.findById(dto.idProfissional())
+            Profissional novoProfissional = profissionalRepository.findById(dto.idProfissional())
                     .orElseThrow(() -> new RuntimeException("Novo Profissional não encontrado."));
             servico.setProfissional(novoProfissional);
         }
@@ -84,8 +86,8 @@ public class ServicoService {
     // MÉTODO UTILITÁRIO.
     private ServicoResponseDTO converterParaDTO(Servico s) {
         return new ServicoResponseDTO(
-             s.setIdServico(),
-             s.setNome(),
+             s.getIdServico(),
+             s.getNome(),
              s.getDescricao(),
              s.getDuracaoMinutos(),
              s.getPrecoPadrao(),
@@ -97,4 +99,5 @@ public class ServicoService {
 
     public Object buscarPorId(Long id) {
     }
+
 }
