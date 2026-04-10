@@ -1,0 +1,49 @@
+package com.belezastudio.api.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Data
+@Entity
+@Table(name = "finaceiro")
+public class Financeiro {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_lancamento")
+    private Long idLancamento;
+
+    // ENETRADA (pagamento de cliente) ou SAÍDA (despesas, pagamento de comissão).
+    @Column(nullable = false, length = 10)
+    private String tipo;
+
+    // Ex.: Dinheiro, Cartão de Crédito, Pix, Fiado.
+    @Column(name = "forma_pagamento", length = 50)
+    private String formaPagamento;
+
+    @Column(columnDefinition = "TEXT")
+    private String descricao;
+
+    @Column(name = "data_lancamento", nullable = false, updatable = false)
+    private LocalDateTime dataLancamento;
+
+    // Relacionamento opcional: Despesas fixas (luz, aluguel) não têm profissional vinculado.
+    @ManyToOne
+    @JoinColumn(name = "idprofissional")
+    private Profissional profissional;
+
+    @PrePersist
+    protected void onCreate() {
+        this.dataLancamento = LocalDateTime.now(); // Preenche a data automaticamente no momento do insert.
+    }
+
+    public void setValor(BigDecimal valor) {
+    }
+
+    public Object getValor() {
+        return null;
+    }
+}
