@@ -74,7 +74,7 @@ public class FinanceiroService {
         // Soma o valor total bruto gerado por ele.
         BigDecimal totalGerado = servicosRealizados.stream()
                 .map(Financeiro::getValor)
-                .reduce(BigDecimal.ZERO, (a, b) -> a.add((BigDecimal) b));
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Calcula a comissão baseada na porcentagem cadastrada no perfil dele.
         BigDecimal porcentagem = profissional.getPorcentagemComissao().divide(new BigDecimal("100"));
@@ -85,7 +85,7 @@ public class FinanceiroService {
         return new FinanceiroResponseDTO(
                 f.getIdLancamento(),
                 f.getTipo(),
-                (BigDecimal) f.getValor(),
+                f.getValor(), // Removido o cast (BigDecimal) desnecessário
                 f.getFormaPagamento(),
                 f.getDescricao(),
                 f.getDataLancamento(),

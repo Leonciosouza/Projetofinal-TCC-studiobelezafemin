@@ -5,6 +5,6 @@ public record ClienteResponseDTO (
         String nome,
         String email,
         String telefone,
-        Integer pontosFidelidade
-) {}
+        Integer pontosFidelidade,
+        java.time.LocalDate dataNascimento) {}
 

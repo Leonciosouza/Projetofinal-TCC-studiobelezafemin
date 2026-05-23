@@ -16,7 +16,9 @@ public interface FinanceiroRepository extends JpaRepository<Financeiro, Long> {
     List<Financeiro> findByDataLancamentoBetween(LocalDateTime inicio, LocalDateTime fim);
 
     // Busca apenas as entradas vinculadas a um profissional em um período (para calcular comissão).
-    @Query("SELECT f FROM Finaceiro f WHERE f.profissional.idProfissional = :idProfissional" +
+    // 1. "Financeiro" escrito corretamente (com 'n').
+    // 2. Espaço adicionado após o :idProfissional.
+    @Query("SELECT f FROM Financeiro f WHERE f.profissional.idProfissional = :idProfissional " +
             "AND f.tipo = 'ENTRADA' " +
             "AND f.dataLancamento BETWEEN :inicio AND :fim")
     List<Financeiro> findEntradasPorProfissionalEPeriodo(

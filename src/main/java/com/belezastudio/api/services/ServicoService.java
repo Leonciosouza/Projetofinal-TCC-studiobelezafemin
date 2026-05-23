@@ -1,6 +1,5 @@
 package com.belezastudio.api.services;
 
-
 import com.belezastudio.api.dto.ServicoRequestDTO;
 import com.belezastudio.api.dto.ServicoResponseDTO;
 import com.belezastudio.api.model.Profissional;
@@ -54,6 +53,14 @@ public class ServicoService {
                 .collect(Collectors.toList());
     }
 
+    // READ (Por ID) - AQUI ESTÁ A CORREÇÃO.
+    public ServicoResponseDTO buscarPorId(Long id) {
+        Servico servico = servicoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
+        return converterParaDTO(servico);
+
+    }
+
     // UPDATE.
     public ServicoResponseDTO atualizarServico(Long id, ServicoRequestDTO dto) {
         Servico servico = servicoRepository.findById(id)
@@ -94,10 +101,5 @@ public class ServicoService {
              s.getProfissional().getIdProfissional(),
              s.getProfissional().getUsuario().getNome()
         );
-
     }
-
-    public Object buscarPorId(Long id) {
-    }
-
 }

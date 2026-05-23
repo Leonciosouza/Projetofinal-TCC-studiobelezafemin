@@ -34,4 +34,40 @@ public class ClienteController {
     public ResponseEntity<List<ClienteResponseDTO>> listarClientes() {
         return ResponseEntity.ok(clienteService.listarTodosClientes());
     }
+
+    // Endpoint para buscar um cliente específico pelo ID.
+    @GetMapping("/{id}")
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+        try {
+            ClienteResponseDTO cliente = clienteService.buscarPorId(id);
+            return ResponseEntity.ok(cliente);
+        } catch (RuntimeException e) {
+            // Retorna o status 404 caso o cliente não exista no banco
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    // Endpoint para buscar um cliente específico por ID.
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody ClienteRequestDTO dto) {
+        try {
+            ClienteResponseDTO clienteAtualizado = clienteService.atualizarCliente(id, dto);
+            return ResponseEntity.ok(clienteAtualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Endpoint para deletar um cliente existente pelo ID.
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletar(@PathVariable Long id) {
+        try {
+            clienteService.deletarCliente(id);
+            // Retorna o status 204 No Content (padrão recomendado para exclusões bem-sucedidas)
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            // Retorna 400 Bad Request se o ID não for encontrado
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
