@@ -48,6 +48,9 @@ public class ProfissionalService {
         // Se a comissão vier nula, define o padrão de 50% conforme documentação.
         profissional.setPorcentagemComissao(dto.porcentagemComissao() != null ? dto.porcentagemComissao() : new java.math.BigDecimal("50.00"));
 
+        // CORREÇÃO: Linha adicionada para enviar a data ao banco de dados
+        usuario.setDataNascimento(dto.dataNascimento());
+
         // Salva ambos (muito em função do CascadeType.ALL).
         Profissional salvo = profissionalRepository.save(profissional);
 
@@ -78,6 +81,12 @@ public class ProfissionalService {
         usuario.setNome(dto.nome());
         usuario.setTelefone(dto.telefone());
         // Não atualizamos o login/email aqui por questão de segurança, precisaria de uma validação extra.
+
+        // CORREÇÃO: Linha adicionada para atualizar a data também no PUT
+        usuario.setDataNascimento(dto.dataNascimento());
+
+        // ESTA É A LINHA QUE SALVA O E-MAIL:
+        usuario.setEmail(dto.email());
 
         // Atualiza dados do Profissional.
         profissional.setFuncao(dto.funcao());
