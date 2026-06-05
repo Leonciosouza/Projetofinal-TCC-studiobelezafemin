@@ -4,8 +4,9 @@ import java.math.BigDecimal;
 
 public record ServicoResponseDTO (
         Long idServico,
+        String nome,
         String descricao,
-        String Descricao, Integer duracaoMinutos,
+        Integer duracaoMinutos,
         BigDecimal precoPadrao,
         Long idProfissional,
         String nomeProfissional // Retornamos o nome para facilitar na tela do cliente.

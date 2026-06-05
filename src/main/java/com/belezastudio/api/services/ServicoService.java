@@ -21,7 +21,7 @@ public class ServicoService {
     @Autowired
     private ProfissionalRepository profissionalRepository;
 
-    // CREATE.
+    // CREATE: Cadastrar um novo Serviço vinculado a um Profissional.
     public  ServicoResponseDTO cadastrarServico(ServicoRequestDTO dto) {
         // Busca o profissional no banco para garantir que ele existe.
         Profissional profissional = profissionalRepository.findById(dto.idProfissional())
@@ -99,7 +99,7 @@ public class ServicoService {
              s.getDuracaoMinutos(),
              s.getPrecoPadrao(),
              s.getProfissional().getIdProfissional(),
-             s.getProfissional().getUsuario().getNome()
+             s.getProfissional().getUsuario().getNome() // // Retorna o nome do profissional para facilitar a visualização no Postman.
         );
     }
 }
