@@ -12,17 +12,14 @@ import java.util.List;
 @Repository
 public interface FinanceiroRepository extends JpaRepository<Financeiro, Long> {
 
-    // Busca todos os lançamentos de um período (útil para fechamento da caixa diário/mensal).
-    List<Financeiro> findByDataLancamentoBetween(LocalDateTime inicio, LocalDateTime fim);
-
-    // Busca apenas as entradas vinculadas a um profissional em um período (para calcular comissão).
-    // 1. "Financeiro" escrito corretamente (com 'n').
-    // 2. Espaço adicionado após o :idProfissional.
+    // Busca todas as entradas de um profissional dentro de um período de datas
     @Query("SELECT f FROM Financeiro f WHERE f.profissional.idProfissional = :idProfissional " +
             "AND f.tipo = 'ENTRADA' " +
-            "AND f.dataLancamento BETWEEN :inicio AND :fim")
-    List<Financeiro> findEntradasPorProfissionalEPeriodo(
+            "AND f.dataLancamento >= :inicio AND f.dataLancamento <= :fim")
+    List<Financeiro> buscarEntradasPorProfissionalEPeriodo(
             @Param("idProfissional") Long idProfissional,
             @Param("inicio") LocalDateTime inicio,
-            @Param("fim") LocalDateTime fim);
+            @Param("fim") LocalDateTime fim
+    );
+
 }

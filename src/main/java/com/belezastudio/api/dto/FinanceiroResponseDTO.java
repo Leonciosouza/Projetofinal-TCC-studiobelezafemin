@@ -11,7 +11,7 @@ public record FinanceiroResponseDTO(
         String descricao,
         LocalDateTime dataLancamento,
         Long idProfissional,
-        String nomeProfissional  // Retornado caso exista o vinculo.
-
-) {}
+        String nomeProfissional,  // Será null se for uma despesa geral do salão; Retornado caso exista o vinculo.
+        Long idAgend) // ATUALIZAÇÃO: ID do agendamento vinculado no retorno
+{}
 

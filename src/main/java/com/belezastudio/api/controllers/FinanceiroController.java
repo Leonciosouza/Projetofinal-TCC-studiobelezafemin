@@ -1,5 +1,6 @@
 package com.belezastudio.api.controllers;
 
+import com.belezastudio.api.dto.ComissaoResponseDTO;
 import com.belezastudio.api.dto.FinanceiroRequestDTO;
 import com.belezastudio.api.dto.FinanceiroResponseDTO;
 import com.belezastudio.api.services.FinanceiroService;
@@ -18,32 +19,46 @@ public class FinanceiroController {
     @Autowired
     private FinanceiroService financeiroService;
 
-    // Rota para registrar uma nova movimentação (Entrada/Saída).
-    @PostMapping("/lancamento")
+    // ROTA POST: Rota para registrar uma nova movimentação (Entrada/Saída).
+    @PostMapping
     public ResponseEntity<?> registrarLancamento(@RequestBody FinanceiroRequestDTO dto) {
         try {
-            FinanceiroResponseDTO response = financeiroService.registrarLancamento(dto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            FinanceiroResponseDTO resposta = financeiroService.registrarLancamento(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getLocalizedMessage());
+        }
+    }
+
+    // Rota GET: Recupera todo o histórico financeiro persistido
+    @GetMapping
+    public ResponseEntity<List<FinanceiroResponseDTO>> listarTodos() {
+        return ResponseEntity.ok(financeiroService.listarTodos());
+    }
+
+    // Rota DELETE: Permite estornar fisicamente uma linha pelo ID do lançamento
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletar(@PathVariable Long id) {
+        try {
+            financeiroService.deletarLancamento(id);
+            return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // Rota para puxar o fluxo de caixa apenas do dia atual.
-    @GetMapping("/caixa-diario")
-    public ResponseEntity<List<FinanceiroResponseDTO>> listarCaixaDoDia() {
-        return ResponseEntity.ok(financeiroService.listarCaixaDoDia());
-    }
-
-    // Rota estratégica: Retorna o valor exato que o salão deve pagar de comissão ao profissional no mês atual, considerando os serviços realizados e as regras de comissão definidas.
+    // NOVA ROTA GET: (Mapeada via RequestParam para fechamento de folha de pagamento).
+    // Exemplo de chamada no Postman: GET http://localhost:8080/api/financeiro/comissao/4?mes=6&ano=2026
     @GetMapping("/comissao/{idProfissional}")
-    public ResponseEntity<?> calcularComissao(@PathVariable Long idProfissional)  {
+    public ResponseEntity<?> calcularFechamentoComissao(
+            @PathVariable Long idProfissional,
+            @RequestParam int mes,
+            @RequestParam int ano) {
         try {
-            BigDecimal comissao = financeiroService.calcularComissaoMensal(idProfissional);
-            return ResponseEntity.ok("O valor da comissão atual é de: R$ " + comissao.toString());
-
+            ComissaoResponseDTO relatorio = financeiroService.calcularComissaoMensal(idProfissional, mes, ano);
+            return ResponseEntity.ok(relatorio);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
