@@ -1,15 +1,15 @@
 package com.belezastudio.api.controllers;
 
-import com.belezastudio.api.dto.ComissaoResponseDTO;
-import com.belezastudio.api.dto.FinanceiroRequestDTO;
-import com.belezastudio.api.dto.FinanceiroResponseDTO;
+import com.belezastudio.api.dto.*;
 import com.belezastudio.api.services.FinanceiroService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -61,4 +61,23 @@ public class FinanceiroController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    // ROTA GERENCIAL 1: Obter o Lucro ou Prejuízo do Mês (Receitas - Despesas).
+    // Exemplo: GET http://localhost:8080/api/finaceiro/balanco?mes=6&ano=2026
+    @GetMapping("/balanco")
+    public ResponseEntity<BalancoMensalResponseDTO> obterBlancoMensal(
+            @RequestParam int mes,
+            @RequestParam int ano) {
+        return ResponseEntity.ok(financeiroService.gerarBalancoMensal(mes, ano));
+    }
+
+    // ROTA GERENCIAL 2: Obter o Fechamento de Caixa de um Dia Específico (Receitas - Despesas).
+    // Exemplo: GET http://localhost:8080/api/financeiro/fechamento-diario?data=2026-06-27
+    @GetMapping("/fechamento-diario")
+    public ResponseEntity<FechamentoDiarioResponseDTO> obterFechamentoDiario(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
+        return ResponseEntity.ok(financeiroService.gerarFechamentoDiario(data));
+    }
+
+
 }

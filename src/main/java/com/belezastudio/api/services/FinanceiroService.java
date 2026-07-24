@@ -1,9 +1,7 @@
 package com.belezastudio.api.services;
 
 
-import com.belezastudio.api.dto.ComissaoResponseDTO;
-import com.belezastudio.api.dto.FinanceiroRequestDTO;
-import com.belezastudio.api.dto.FinanceiroResponseDTO;
+import com.belezastudio.api.dto.*;
 import com.belezastudio.api.model.Agendamento;
 import com.belezastudio.api.model.Financeiro;
 import com.belezastudio.api.model.Profissional;
@@ -14,9 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.time.*;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -122,6 +121,100 @@ public class FinanceiroService {
         );
 
     };
+
+    // NOVO RECURSO GERENCIAL: Balanço Mensal de Lucros e Prejuízos (Fluxo de Caixa) - Para o Proprietário do Salão.
+    public BalancoMensalResponseDTO gerarBalancoMensal(int mes, int ano) {
+        YearMonth anoMesTarget = YearMonth.of(ano, mes);
+        LocalDateTime inicioMes = anoMesTarget.atDay(1).atStartOfDay();
+        LocalDateTime fimMes = anoMesTarget.atEndOfMonth().atTime(23, 59, 59);
+
+        // Busca tudo o que aconteceu no salão neste mês.
+        List<Financeiro> todosLancamentos = financeiroRepository
+                .buscarLancamentosPorPeriodo(inicioMes, fimMes);
+
+        BigDecimal totalEntradas = BigDecimal.ZERO;
+        BigDecimal totalSaidas = BigDecimal.ZERO;
+
+        for (Financeiro f : todosLancamentos) {
+            if (f.getTipo().equals("ENTRADA")) {
+                totalEntradas = totalEntradas.add(f.getValor());
+            } else if (f.getTipo().equals("SAIDA")) {
+                totalSaidas = totalSaidas.add(f.getValor());
+            }
+        }
+
+        BigDecimal saldoLiquido = totalEntradas.subtract(totalSaidas);
+        String situacao = saldoLiquido.compareTo(BigDecimal.ZERO) >= 0 ? "LUCRO" : "PREJUIZO";
+
+        return new BalancoMensalResponseDTO(mes, ano, totalEntradas, totalSaidas, saldoLiquido, situacao);
+
+    }
+    // NOVO RECURSO GERENCIAL 2: Fechamento de Caixa Diário Automático.
+    public FechamentoDiarioResponseDTO gerarFechamentoDiario(LocalDate data) {
+        LocalDateTime inicioDia = data.atStartOfDay();
+        LocalDateTime fimDia = data.atTime(23, 59, 59);
+
+        List<Financeiro> lancamentosDoDia = financeiroRepository
+                .buscarLancamentosPorPeriodo(inicioDia, fimDia);
+
+        BigDecimal faturamentoBrutoDia = BigDecimal.ZERO;
+        Map<Profissional, BigDecimal> producaoPorProfissional = new HashMap<>();
+
+        // Varrer apenas as ENTRADAS do dia.
+        for (Financeiro f: lancamentosDoDia) {
+            if (f.getTipo().equals("ENTRADA")) {
+                faturamentoBrutoDia = faturamentoBrutoDia.add(f.getValor());
+
+                // Se houver profissional atrelado, soma no "cofrinho" dele.
+                if (f.getProfissional() != null) {
+                    Profissional prof = f.getProfissional();
+                    BigDecimal totalAtual = producaoPorProfissional.getOrDefault(prof, BigDecimal.ZERO);
+                    producaoPorProfissional.put(prof, totalAtual.add(f.getValor()));
+
+                }
+            }
+        }
+
+        // Aplicar a Regra de Negócio: Comissão é zero se for Domingo ou Feriado!
+        boolean diaGeraComissao = isDiaValidoParaComissao(data);
+
+        BigDecimal totalComissoesDevidas = BigDecimal.ZERO;
+        List<ComissaoDiariaProfissionalDTO> detalhamento = new ArrayList<>();
+
+        // Instancia o formatador nativo do Java para a moeda Real Brasileira (R$)
+        NumberFormat formatadorMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+
+        for (Map.Entry<Profissional, BigDecimal> entry : producaoPorProfissional.entrySet()) {
+            Profissional prof = entry.getKey();
+            BigDecimal produzido = entry.getValue();
+            BigDecimal comissao = BigDecimal.ZERO;
+
+            if (diaGeraComissao) {
+                comissao = produzido.multiply(prof.getPorcentagemComissao()).
+                        divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            }
+
+            totalComissoesDevidas = totalComissoesDevidas.add(comissao);
+
+            // Converte os valores em texto já no formato "R$ 0,00" para o Postman.
+            detalhamento.add(new ComissaoDiariaProfissionalDTO(
+                    prof.getIdProfissional(),
+                    prof.getUsuario().getNome(),
+                    formatadorMoeda.format(produzido), // Valor Produzido.
+                    formatadorMoeda.format(comissao)   // Comissão Devida.
+            ));
+        }
+
+        BigDecimal saldoRetidoSalao = faturamentoBrutoDia.subtract(totalComissoesDevidas);
+
+        return new FechamentoDiarioResponseDTO(
+                data,
+                formatadorMoeda.format(faturamentoBrutoDia),
+                formatadorMoeda.format(totalComissoesDevidas),
+                formatadorMoeda.format(saldoRetidoSalao),
+                detalhamento
+        );
+    }
 
     // METODO AUXILIAR DA REGRA DE NEGÓCIO: Avaliação cronológica rigorosa.
     private boolean isDiaValidoParaComissao(LocalDate data) {

@@ -22,4 +22,10 @@ public interface FinanceiroRepository extends JpaRepository<Financeiro, Long> {
             @Param("fim") LocalDateTime fim
     );
 
+    // NOVA QUERY: Busca TODOS os lançamentos (Entradas e Saídas) de um período de datas, independente do profissional.
+    @Query("SELECT f FROM Financeiro f WHERE f.dataLancamento >= :inicio AND f.dataLancamento <= :fim")
+    List<Financeiro> buscarLancamentosPorPeriodo(
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim
+    );
 }
