@@ -1,15 +1,12 @@
 package com.belezastudio.api.services;
 
 
-import com.belezastudio.api.dto.MovimentacaoEstoqueDTO;
-import com.belezastudio.api.dto.ProdutoRequestDTO;
-import com.belezastudio.api.dto.ProdutoResponseDTO;
-import com.belezastudio.api.model.Produto;
-import com.belezastudio.api.repositories.ProdutoRepository;
+import com.belezastudio.api.dto.*;
+import com.belezastudio.api.model.Estoque;
+import com.belezastudio.api.repositories.EstoqueRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,89 +14,76 @@ import java.util.stream.Collectors;
 public class EstoqueService {
 
     @Autowired
-    private ProdutoRepository produtoRepository;
+    private EstoqueRepository estoqueRepository;
 
-    // CREATE
-    public ProdutoResponseDTO cadastrarProduto(ProdutoRequestDTO dto) {
-        Produto produto = new Produto();
-        produto.setNomeProduto(dto.nomeProduto());
-        produto.setQuantidade(dto.quantidadeInicial());
-        produto.setNivelMinimo(dto.nivelMinimo());
-        produto.setFornecedor(dto.fornecedor());
+    // CADASTRAR NOVO PRODUTO NO ESTOQUE.
+    public EstoqueResponseDTO cadastrarProduto(EstoqueResponseDTO dto) {
+        Estoque estoque = new Estoque();
+        estoque.setNomeProduto(dto.nomeProduto());
+        estoque.setQuantidade(dto.quantidade());
+        estoque.setNivelMinimo(dto.nivelMinimo());
+        estoque.setFornecedor(dto.fornecedor());
 
-        // Se já for cadastrado com quantidade > 0, consideramos como a primeira compra.
-        if (dto.quantidadeInicial() > 0) {
-            produto.setDataUltimaCompra(LocalDate.now());
+        Estoque salvo = estoqueRepository.save(estoque);
+        return converterParaDTO(salvo);
+    }
+
+    // LISTAR TODO O INVENTÁRIO DE PRODUTOS.
+    public List<EstoqueResponseDTO> listarTodos() {
+        return estoqueRepository.findAll().stream()
+                .map(this::converterParaDTO)
+                .collect(Collectors.toList());
+    }
+
+    // FUNCIONALIDADE CHAVE: ABATER CONSUMO POR SERVIÇO (EX: Tintura, Shampoo).
+    public EstoqueResponseDTO registrarConsumo(Long idProduto, ConsumoRequestDTO consumoDTO) {
+        Estoque produto = estoqueRepository.findById(idProduto)
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado no estoque."));
+
+        if (produto.getQuantidade() < consumoDTO.quantidadeConsumida()) {
+            throw new RuntimeException("Quantidade em estoque insuficiente para este consumo!");
         }
 
-        Produto salvo = produtoRepository.save(produto);
-        return converterParaDTO(salvo);
+        // Subtrair a quantidade consumida do estoque.
+        produto.setQuantidade(produto.getQuantidade() - consumoDTO.quantidadeConsumida());
 
+        Estoque atualizado = estoqueRepository.save(produto);
+        return converterParaDTO(atualizado);
     }
 
-    // READ (Todos).
-    public List<ProdutoResponseDTO> listarTodos() {
-        return produtoRepository.findAll().stream()
-                .map(this::converterParaDTO)
-                .collect(Collectors.toList());
-    }
-
-    // READ (Apenas produtos com estoque baixo para relatórios).
-    public List<ProdutoResponseDTO> listarEstoqueBaixo() {
-        return produtoRepository.findProdutosComEstoqueBaixo().stream()
-                .map(this::converterParaDTO)
-                .collect(Collectors.toList());
-    }
-
-    // REGRA DE NEGÓCIO: Movimentar Estoque (Entrada/Saída)
-    public ProdutoResponseDTO movimentarEstoque(Long idProduto, MovimentacaoEstoqueDTO dto) {
-        Produto produto = produtoRepository.findById(idProduto)
+    // ADICIONAR REPOSIÇÃO (A Trigger no PostgreSQL atualizará a 'data_ultima_compra' automaticamente).
+    public EstoqueResponseDTO registrarReposicao(Long idProduto, int quantidadeComprada) {
+        Estoque produto = estoqueRepository.findById(idProduto)
                 .orElseThrow(() -> new RuntimeException("Produto não encontrado."));
 
-        if (dto.quantidadeMovimentada() <= 0) {
-            throw new RuntimeException("A quantidade deve ser maior que zero.");
-        }
+        produto.setQuantidade(produto.getQuantidade() + quantidadeComprada);
+        Estoque atualizado = estoqueRepository.save(produto);
 
-        if (dto.tipoMovimentacao().equalsIgnoreCase("ENTRADA")) {
-            produto.setQuantidade(produto.getQuantidade() + dto.quantidadeMovimentada());
-            produto.setDataUltimaCompra(LocalDate.now()); // Atualiza a data da última compra.
-
-        } else if (dto.tipoMovimentacao().equalsIgnoreCase("SAIDA")) {
-            if (produto.getQuantidade() < dto.quantidadeMovimentada()) {
-                throw new RuntimeException("Estoque insuficente para realizar esta saída.");
-            }
-            produto.setQuantidade(produto.getQuantidade() - dto.quantidadeMovimentada());
-        } else {
-            throw new RuntimeException("Tipo de movimentação inválido. Use ENTRADA ou SAÍDA.");
-        }
-
-        Produto atualizado = produtoRepository.save(produto);
         return converterParaDTO(atualizado);
-
     }
 
-    // UPDATE e DELETE seguem o padrão básico...
-    public void deletarProduto(Long idProduto) {
-        if (!produtoRepository.existsById(idProduto)) {
-            throw new RuntimeException("Produto não encontrado.");
-
-        }
-        produtoRepository.deleteById(idProduto);
-
+    // ALERTA DE REPOSIÇÃO: Listar apenas o que está acabando no estoque (quantidade < nível mínimo).
+    public List<EstoqueResponseDTO> listarAlertasReposicao() {
+        return estoqueRepository.buscarProdutosComEstoqueBaixo().stream()
+                .map(this::converterParaDTO)
+                .collect(Collectors.toList());
     }
-    // Método Utilitário Privado para conversão.
-    private ProdutoResponseDTO converterParaDTO(Produto p) {
-        // Regra visual: Se a quantidade for <= ao mínimo, retorna true para o alerta.
-        boolean alerta = p.getQuantidade() <= p.getNivelMinimo();
 
-        return new ProdutoResponseDTO(
-                p.getIdProduto(),
-                p.getNomeProduto(),
-                p.getQuantidade(),
-                p.getNivelMinimo(),
-                p.getFornecedor(),
-                p.getDataUltimaCompra(),
-                alerta
+    // UTILITÁRIO PRIVADO: Converte e insere o selo visual de status de estoque baixo.
+    private EstoqueResponseDTO converterParaDTO(Estoque e) {
+        String status = (e.getQuantidade() <= e.getNivelMinimo()) ? "ALERTA: ESTOQUE BAIXO" : "OK";
+
+        return new EstoqueResponseDTO(
+                e.getIdProduto(),
+                e.getNomeProduto(),
+                e.getQuantidade(),
+                e.getNivelMinimo(),
+                e.getFornecedor(),
+                e.getDataUltimaCompra(),
+                status
         );
     }
+
 }
+
+
