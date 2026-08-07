@@ -11,6 +11,10 @@ import java.util.List;
 
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
 
+
+    // O Spring Data JPA traduz esse nome de método automaticamente para um SELECT com WHERE.
+    // Essa é a linha que o NotificacaoService vai usar para buscar a agenda do dia!
+    List<Agendamento> findByDataAtendimento(LocalDate dataAtendimento);
     // Query para verificar disponibilidade e evitar duplicidade [cite: 68]
     // CORREÇÃO: Foi adicionado um espaço após o :idProfissional na primeira linha
     @Query("SELECT a FROM Agendamento a WHERE a.profissional.idProfissional = :idProfissional " +

@@ -3,6 +3,7 @@ package com.belezastudio.api.controllers;
 import com.belezastudio.api.dto.AgendamentoRequestDTO;
 import com.belezastudio.api.dto.AgendamentoResponseDTO;
 import com.belezastudio.api.model.Agendamento;
+import com.belezastudio.api.repositories.AgendamentoRepository;
 import com.belezastudio.api.services.AgendamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,10 @@ public class AgendamentoController {
 
     @Autowired
     private AgendamentoService agendamentoService;
+
+    // 2. Injeção do repositório adicionada!
+    @Autowired
+    private AgendamentoRepository agendamentoRepository;
 
     // Endpoint para criar um novo Agendamento (Acesso livre para autoagendamento[cite: 41]).
     @PostMapping
@@ -46,15 +51,31 @@ public class AgendamentoController {
         }
     }
 
-    // ROTA específica para mudar o status (PATCH em vez de PUT, pois é uma atualização parcial).
+    // Rota única para Cancelar, Confirmar, Marcar Ausência de um agendamento (PATCH em vez de PUT, pois é uma atualização parcial), ou Concluír.
+    // PATCH /api/agendamentos/3/status?novoStatus=CANCELADO.
     @PatchMapping("/{id}/status")
-    public ResponseEntity<?> atualizarStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
-        try {
-           String novoStatus = request.get("status");
-           return ResponseEntity.ok(agendamentoService.atualizarStatus(id, novoStatus));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+    public ResponseEntity<String> alterarStatusAgendamento(
+                @PathVariable Long id,
+                @RequestParam String novoStatus) {
+
+        // Regra de negócio simples: que pode sewr colocada no Controller, ou Service.
+        Agendamento agendamento = agendamentoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
+
+        // Verifica se o status é válido.
+        if (novoStatus.equalsIgnoreCase("CANCELADO") ||
+                novoStatus.equalsIgnoreCase("AUSENTE") ||
+                novoStatus.equalsIgnoreCase("CONFIRMADO") ||
+                novoStatus.equalsIgnoreCase("CONCLUÍDO")) {
+
+              agendamento.setStatus(novoStatus.toUpperCase());
+              agendamentoRepository.save(agendamento);
+              return ResponseEntity.ok("Status atualizado para: " + novoStatus.toUpperCase());
+
         }
+        return ResponseEntity.badRequest().body("Status inválido.");
+
+
     }
 
     // Endpoint para deletar um agendamento pelo ID.

@@ -7,6 +7,7 @@ import com.belezastudio.api.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -106,6 +107,26 @@ public class ClienteService {
         }
         // Se existir, efetua a exclusão física no PostgreSQL
         usuarioRepository.deleteById(id);
+    }
+
+    // LÓGICA DE FIDELIDADE: Incrementa pontos de fidelidade para um cliente específico.
+    public void adicionarPontosFidelidade(Long idCliente, BigDecimal valorGasto) {
+
+        // ATENÇÃO: Se o seu repositório aqui dentro se chamar clienteRepository, mude a linha abaixo para usuarioRepository.findById(idCliente).
+        Usuario cliente = usuarioRepository.findById(idCliente).orElse(null);
+
+        if (cliente != null) {
+            // Regra Matmática: R$ 1,00 = 1 ponto de fidelidade.
+            int pontosGanhos = valorGasto.intValue(); // Ignora os centavos, apenas a parte inteira do valor gasto.
+            int pontosAtuais = cliente.getPontosFidelidade() != null ? cliente.getPontosFidelidade() : 0;
+
+            cliente.setPontosFidelidade(pontosAtuais + pontosGanhos);
+
+            // ATENÇÃO: Ajuste aqui também para o nome do repositório que você usa nesta classe.
+            usuarioRepository.save(cliente); // Salva as alterações no banco de dados.
+
+        }
+
     }
 
     // Método Utilitário Privado para converter a Entidade do banco no DTO de resposta seguro.

@@ -31,6 +31,9 @@ public class FinanceiroService {
     @Autowired
     private AgendamentoRepository agendamentoRepository;
 
+    @Autowired
+    private ClienteService clienteService;
+
 
     // CREATE: Registrar entrada (pagamento) ou saída (despesa).
     public FinanceiroResponseDTO registrarLancamento(FinanceiroRequestDTO dto) {
@@ -53,6 +56,7 @@ public class FinanceiroService {
                     .orElseThrow(() -> new RuntimeException("Profissional não encontrado"));
             financeiro.setProfissional(prof);
         }
+
         // ALTERAÇÃO RECENTE: Vinculação condicional do Agendamento que originou a receita.
         if (dto.idAgendamento() != null) {
             Agendamento agend = agendamentoRepository.findById(dto.idAgendamento())
@@ -61,6 +65,24 @@ public class FinanceiroService {
         }
 
         Financeiro salvo = financeiroRepository.save(financeiro);
+
+        // =========================================================================
+        // 2. INTEGRAÇÃO: SISTEMA DE FIDELIDADE (Módulo Cliente)
+        // =========================================================================
+        // Se entrou dinheiro no caixa e esse dinheiro veio de um agendamento...
+        if (salvo.getTipo().equals("ENTRADA") && salvo.getAgendamento() != null) {
+
+            // Navega pelos relacionamentos para descobrir quem é o dono do agendamento.
+            Long idCliente = salvo.getAgendamento().getCliente().getIdUsuario();
+            BigDecimal valorDaTransacao = salvo.getValor();
+
+            // Aciona o CleinteService para creditar os pontos na conta dessa cleinte!
+            clienteService.adicionarPontosFidelidade(idCliente, valorDaTransacao);
+
+        }
+        //==============================================================================
+
+        // 3. Devolve a resposta padronizada para o Postman (ou qualquer outro cliente REST).
         return converterParaDTO(salvo);
 
     }
@@ -244,7 +266,6 @@ public class FinanceiroService {
         // Se passou pelos testes, é dia útil para comissão!
         return true;
     }
-
 
     // Método Utilitário.
     private FinanceiroResponseDTO converterParaDTO(Financeiro f) {
