@@ -5,6 +5,7 @@ import com.belezastudio.api.dto.ClienteResponseDTO;
 import com.belezastudio.api.model.Usuario;
 import com.belezastudio.api.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,13 +17,15 @@ public class ClienteService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
-    private Object usuario;
+    //private Object usuario;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public ClienteResponseDTO cadastrarCliente(ClienteRequestDTO dto) {
         // Valida se o Login ou email já existem.
-        if (usuarioRepository.findByLogin(dto.login()).isPresent() ||
-            usuarioRepository.findByEmail(dto.email()).isPresent()) {
-            throw new RuntimeException("Login ou E-mail já estão em uso.");
+        if (usuarioRepository.findByEmail(dto.email()) != null){
+            throw new RuntimeException("E-mail já em uso no sistema. Por favor, utilize outro e-mail.");
 
         }
         // Converte DTO para Model (Entidade).
@@ -30,10 +33,11 @@ public class ClienteService {
         usuario.setNome(dto.nome());
         usuario.setEmail(dto.email());
         usuario.setTelefone(dto.telefone());
-        usuario.setLogin(dto.login());
+
 
         // Dica: Futuramente, integraremos o BCryptPasswordEncoder do Spring Security aqui.
-        usuario.setSenha(dto.senha());
+        String senhaCriptografada = passwordEncoder.encode(dto.senha());
+        usuario.setSenha(senhaCriptografada); // CORREÇÃO REALIZADA PARA SALVAR A SENHA CRIPTGRAFADA NO BD.
 
         usuario.setPerfil("CLIENTE"); // Define automaticamente o perfil.
         usuario.setDataNascimento(dto.dataNascimento());
@@ -87,6 +91,11 @@ public class ClienteService {
         usuario.setDataNascimento(dto.dataNascimento());
         usuario.setEmail(dto.email());
 
+        // Importante: Se o DTO enviar uma senha nova na atualização, nós a criptografamos antes de . Se não houver senha nova, mantemos a antiga.
+        if (dto.senha() != null && !dto.senha().isBlank()) {
+            usuario.setSenha(passwordEncoder.encode(dto.senha()));
+        }
+
         // Salva as alterações no banco de dados
         Usuario atualizado = usuarioRepository.save(usuario);
 
@@ -116,7 +125,7 @@ public class ClienteService {
         Usuario cliente = usuarioRepository.findById(idCliente).orElse(null);
 
         if (cliente != null) {
-            // Regra Matmática: R$ 1,00 = 1 ponto de fidelidade.
+            // Regra Matemática: R$ 1,00 = 1 ponto de fidelidade.
             int pontosGanhos = valorGasto.intValue(); // Ignora os centavos, apenas a parte inteira do valor gasto.
             int pontosAtuais = cliente.getPontosFidelidade() != null ? cliente.getPontosFidelidade() : 0;
 

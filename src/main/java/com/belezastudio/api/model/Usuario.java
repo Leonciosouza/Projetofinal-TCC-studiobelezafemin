@@ -2,12 +2,18 @@ package com.belezastudio.api.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 
 @Data // Anotação do Lombok que Getters, Setters, toString, etc.
 @Entity
 @Table(name = "usuarios")
-public class Usuario {
+public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,9 +28,6 @@ public class Usuario {
     @Column(length = 20)
     private String telefone;
 
-    @Column(nullable = false, unique = true, length = 50)
-    private String login;
-
     @Column(nullable = false)
     private String senha;
 
@@ -36,5 +39,42 @@ public class Usuario {
 
     @Column(name = "pontos_fidelidade", columnDefinition = "integer default 0")
     private Integer pontosFidelidade = 0;
+
+    // Métodos onbrigatóriso do UserDetails:
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Por enquanto, todos terão permissão de "USER". Futuramente podemos separar ADMIN e CLIENTE.
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.senha;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email; // O email será o "login" do usuário.
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 
 }

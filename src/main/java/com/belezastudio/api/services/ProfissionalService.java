@@ -9,6 +9,7 @@ import com.belezastudio.api.repositories.ProfissionalRepository;
 import com.belezastudio.api.repositories.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,24 +24,30 @@ public class ProfissionalService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    // Injeção de codificador de senha do Spring Security (BCryptPasswordEncoder) para futura implementação de segurança.
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     // CREATE
     @Transactional
     public ProfissionalResponseDTO cadastrarProfissional(ProfissionalRequestDTO dto) {
-        if (usuarioRepository.findByLogin(dto.login()).isPresent() ||
-            usuarioRepository.findByEmail(dto.email()).isPresent()) {
+        // 1. CORREÇÃO DA VALIDAÇÃO: Verifica apenas o e-mail, checando se é diferente de nulo.
+        if (usuarioRepository.findByEmail(dto.email()) != null) {
             throw new RuntimeException("Login ou E-mail já cadastrado no sistema.");
         }
-        // 1. Prepara o Usuário.
+        // 2. Prepara o Usuário.
         Usuario usuario = new Usuario();
         usuario.setNome(dto.nome());
         usuario.setEmail(dto.email());
         usuario.setTelefone(dto.telefone());
-        usuario.setLogin(dto.login());
-        usuario.setSenha(dto.senha()); // Futuramente adicionar BCrypt.
+
+        // 3. SEGURANÇA: Criptografando a senha do profissional antes de salvar
+        usuario.setSenha(passwordEncoder.encode(dto.senha())); // Futuramente adicionar BCrypt;
+
         usuario.setPerfil("PROFISSIONAL"); // Define o perfil regidamente [cite: 74].
         usuario.setDataNascimento(dto.dataNascimento());
 
-        // 2. Prepara o Profissional.
+        // 4. Prepara o Profissional.
         Profissional profissional = new Profissional();
         profissional.setUsuario(usuario);
         profissional.setFuncao(dto.funcao());
@@ -48,8 +55,6 @@ public class ProfissionalService {
         // Se a comissão vier nula, define o padrão de 50% conforme documentação.
         profissional.setPorcentagemComissao(dto.porcentagemComissao() != null ? dto.porcentagemComissao() : new java.math.BigDecimal("50.00"));
 
-        // CORREÇÃO: Linha adicionada para enviar a data ao banco de dados
-        usuario.setDataNascimento(dto.dataNascimento());
 
         // Salva ambos (muito em função do CascadeType.ALL).
         Profissional salvo = profissionalRepository.save(profissional);
@@ -87,6 +92,11 @@ public class ProfissionalService {
 
         // ESTA É A LINHA QUE SALVA O E-MAIL:
         usuario.setEmail(dto.email());
+
+        // Se o DTO enviar uma senha nova na atualização, nós a criptografamos.
+        if (dto.senha() != null && !dto.senha().isBlank()) {
+            usuario.setSenha(passwordEncoder.encode(dto.senha()));
+        }
 
         // Atualiza dados do Profissional.
         profissional.setFuncao(dto.funcao());
