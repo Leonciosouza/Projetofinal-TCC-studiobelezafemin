@@ -43,8 +43,12 @@ public class Usuario implements UserDetails {
     // Métodos onbrigatóriso do UserDetails:
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Por enquanto, todos terão permissão de "USER". Futuramente podemos separar ADMIN e CLIENTE.
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        // Se o perfil estiver nulo por algum motivo, não dá erro, apenas retorna sem permissões.
+        if (this.perfil == null) {
+            return List.of();
+        }
+        // Transforma a palavra salva no banco ("PROFISSIONAL" ou "CLIENTE") em uma Autoridade do Spring.
+        return List.of(new SimpleGrantedAuthority(this.perfil));
     }
 
     @Override

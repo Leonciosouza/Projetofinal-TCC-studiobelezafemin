@@ -31,6 +31,19 @@ public class SecurityConfig {
                             // Libera o acesso para criar conta e fazer login sem precisar de token.
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/clientes").permitAll()
+
+                        // 2. ROTAS EXCLUSIVAS DA GESTÃO (Apenas Profissionais/Admins)
+                        // Bloqueia qualquer tentativa de um Cliente cadastrar, editar ou deletar profissionais.
+                        .requestMatchers("/api/profissionais/**").hasAuthority("PROFISSIONAL")
+
+                        // Exemplo: Somente profissionais gerenciam o estoque e financeiro.
+                        .requestMatchers("/api/estoque/**").hasAuthority("PROFISSIONAL")
+                        .requestMatchers("/api/financeiro/**").hasAuthority("PROFISSIONAL")
+
+                        // 3. ROTAS COMPARTILHADAS (Ambos podem acessar, mas com limites)
+                        // Exemplo: Clientes e Profissionais podem ver a lista de serviços oferecidos
+                        .requestMatchers(HttpMethod.GET, "/api/servicos/**").hasAnyAuthority("CLIENTE", "PROFISSIONAL")
+
                         // Tranca todo o resto do acesso, exigindo token válido.
                         .anyRequest().authenticated()
                 )
