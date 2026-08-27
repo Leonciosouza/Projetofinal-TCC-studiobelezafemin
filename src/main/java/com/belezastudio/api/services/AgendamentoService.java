@@ -7,13 +7,11 @@ import com.belezastudio.api.model.Agendamento;
 import com.belezastudio.api.model.Profissional;
 import com.belezastudio.api.model.Servico;
 import com.belezastudio.api.model.Usuario;
-import com.belezastudio.api.repositories.AgendamentoRepository;
-import com.belezastudio.api.repositories.ProfissionalRepository;
-import com.belezastudio.api.repositories.ServicoRepository;
-import com.belezastudio.api.repositories.UsuarioRepository;
+import com.belezastudio.api.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,6 +31,10 @@ public class AgendamentoService {
     @Autowired
     private ServicoRepository servicoRepository;
 
+    // INJEÇÃO DA NOVA TRAVA DE SEGURANÇA:
+    @Autowired
+    private BloqueioAgendaRepository bloqueioRepository;
+
     // CREATE: Cadastrar Agendamento com validação de regras de negócio.
     public AgendamentoResponseDTO cadastrarAgendamento(AgendamentoRequestDTO dto) {
 
@@ -48,6 +50,25 @@ public class AgendamentoService {
 
         // 2. Calcula a Hora Final com base na duração do serviço.
         LocalTime horaFimCalculada = dto.horaInicio().plusMinutes(servico.getDuracaoMinutos());
+
+        // =============================================================
+        // REGRA DE NEGÓCIO 1: VERIFICAÇÃO DE FOLGAS, FÉRIAS E MANUTENÇÃO.
+        // Junta a data com a hora para bater com o formato do banco de Bloqueios.
+        LocalDateTime inicioAtendimento = dto.dataAtendimento().atTime(dto.horaInicio());
+        LocalDateTime fimAtendimento = dto.dataAtendimento().atTime(horaFimCalculada);
+
+        boolean horarioBloqueado = bloqueioRepository.existeBloqueioNoHorario(
+                profissional.getIdProfissional(),
+                inicioAtendimento,
+                fimAtendimento
+        );
+
+        if (horarioBloqueado) {
+            throw new RuntimeException("Não foi possível agendar: O salão ou o profissional está indisponível neste horário (Folga/Manutenção)");
+        }
+
+        //==============================================================
+
 
         // REGRA DE NEGÓCIO: Verifica se há choque de horários (Overbooking).
         // 3. Verifica disponibilidade na genda (Regra anti-overbooking) [cite: 67, 68]

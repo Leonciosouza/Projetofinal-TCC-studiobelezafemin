@@ -40,8 +40,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/estoque/**").hasAuthority("PROFISSIONAL")
                         .requestMatchers("/api/financeiro/**").hasAuthority("PROFISSIONAL")
 
+                        // NOVA ROTA: Apenas profissionais podem criar/gerenciar bloqueios e folgas.
+                        .requestMatchers("/api/bloqueios/**").hasAuthority("PROFISSIONAL")
+
                         // 3. ROTAS COMPARTILHADAS (Ambos podem acessar, mas com limites)
-                        // Exemplo: Clientes e Profissionais podem ver a lista de serviços oferecidos
+                        // Exemplo: Clientes e Profissionais podem ver a lista de serviços oferecidos.
                         .requestMatchers(HttpMethod.GET, "/api/servicos/**").hasAnyAuthority("CLIENTE", "PROFISSIONAL")
 
                         // Tranca todo o resto do acesso, exigindo token válido.
