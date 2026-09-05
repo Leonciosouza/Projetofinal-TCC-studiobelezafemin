@@ -47,12 +47,14 @@ public class SecurityConfig {
                         // Exemplo: Clientes e Profissionais podem ver a lista de serviços oferecidos.
                         .requestMatchers(HttpMethod.GET, "/api/servicos/**").hasAnyAuthority("CLIENTE", "PROFISSIONAL")
 
+                        // -----> NOVA ROTA DO SISTEMA DE FIDELIDADE <---------.
+                        .requestMatchers("/api/fidelidade/**").hasAnyAuthority("CLIENTE", "PROFISSIONAL")
+
                         // Tranca todo o resto do acesso, exigindo token válido.
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
-
     }
 
     @Bean

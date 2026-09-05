@@ -81,4 +81,12 @@ public class Usuario implements UserDetails {
         return true;
     }
 
+    // Atualizando os Getters e Setters correspondentes de pontos fidelidade:
+    public Integer getPontosFidelidade() {
+        return pontosFidelidade;
+    }
+
+    public void setPontosFidelidade(Integer pontosFidelidade) {
+        this.pontosFidelidade = pontosFidelidade;
+    }
 }

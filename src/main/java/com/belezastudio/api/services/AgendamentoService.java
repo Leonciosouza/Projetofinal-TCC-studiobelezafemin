@@ -111,6 +111,23 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
 
+        // ===============================================================================
+        // REGRA DE FIDELIDADDE: Credita pontos se o serviço foi concluído.
+        // A checagem dupla evita que o cliente ganhe pontos duas vezes pelo mesmo serviço.
+        if ("CONCLUIDO".equalsIgnoreCase(novoStatus) && !"CONCLUIDO".equalsIgnoreCase(agendamento.getStatus())){
+            Usuario cliente = agendamento.getCliente();
+
+            // Pega os pontos atuais (Se for null no banco, considera 0).
+            int pontosAtuais = cliente.getPontosFidelidade() != null ? cliente.getPontosFidelidade() : 0;
+
+            // Adiciona 50 pontos.
+            cliente.setPontosFidelidade(pontosAtuais + 50);
+
+            // Slava a pontuação nova no perfil do cliente.
+            usuarioRepository.save(cliente);
+        }
+        // ========================================================================================
+
         agendamento.setStatus(novoStatus);
         Agendamento atualizado = agendamentoRepository.save(agendamento);
         return converterParaDTO(atualizado);
