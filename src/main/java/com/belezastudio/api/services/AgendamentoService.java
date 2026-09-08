@@ -8,6 +8,7 @@ import com.belezastudio.api.model.Profissional;
 import com.belezastudio.api.model.Servico;
 import com.belezastudio.api.model.Usuario;
 import com.belezastudio.api.repositories.*;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -106,29 +107,38 @@ public class AgendamentoService {
         return converterParaDTO(agendamento);
     }
 
-    // UPDATE: Atualizar apenas o Status (Boa Prática).
+    @Transactional
     public AgendamentoResponseDTO atualizarStatus(Long id, String novoStatus) {
         Agendamento agendamento = agendamentoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
 
-        // ===============================================================================
-        // REGRA DE FIDELIDADDE: Credita pontos se o serviço foi concluído.
-        // A checagem dupla evita que o cliente ganhe pontos duas vezes pelo mesmo serviço.
-        if ("CONCLUIDO".equalsIgnoreCase(novoStatus) && !"CONCLUIDO".equalsIgnoreCase(agendamento.getStatus())){
-            Usuario cliente = agendamento.getCliente();
+        // 1. Limpeza de strings para evitar falha na condição (remove espaços invisíveis e padroniza maiúsculas)
+        String statusLimpo = novoStatus != null ? novoStatus.trim().toUpperCase() : "";
+        String statusBanco = agendamento.getStatus() != null ? agendamento.getStatus().trim().toUpperCase() : "";
 
-            // Pega os pontos atuais (Se for null no banco, considera 0).
+        System.out.println(">>> [DEBUG FIDELIDADE] Status Atual no Banco: '" + statusBanco + "'");
+        System.out.println(">>> [DEBUG FIDELIDADE] Status Recebido Postman: '" + statusLimpo + "'");
+
+        // 2. Condição super blindada
+        if ("CONCLUIDO".equals(statusLimpo) && !"CONCLUIDO".equals(statusBanco)) {
+
+            Usuario cliente = agendamento.getCliente();
+            System.out.println(">>> [DEBUG FIDELIDADE] Entrou no IF! Adicionando pontos para: "
+                    + cliente.getNome() + " (ID: " + cliente.getIdUsuario() + ")");
+
             int pontosAtuais = cliente.getPontosFidelidade() != null ? cliente.getPontosFidelidade() : 0;
 
-            // Adiciona 50 pontos.
             cliente.setPontosFidelidade(pontosAtuais + 50);
-
-            // Slava a pontuação nova no perfil do cliente.
             usuarioRepository.save(cliente);
-        }
-        // ========================================================================================
 
-        agendamento.setStatus(novoStatus);
+            System.out.println(">>> [DEBUG FIDELIDADE] Sucesso! Novo saldo: " + cliente.getPontosFidelidade());
+
+        } else {
+            System.out.println(">>> [DEBUG FIDELIDADE] AVISO: O bloco não foi executado. Condição falhou.");
+        }
+
+        // 3. Atualiza e salva o Agendamento
+        agendamento.setStatus(statusLimpo);
         Agendamento atualizado = agendamentoRepository.save(agendamento);
         return converterParaDTO(atualizado);
     }

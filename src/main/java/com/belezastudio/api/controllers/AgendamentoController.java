@@ -52,30 +52,20 @@ public class AgendamentoController {
     }
 
     // Rota única para Cancelar, Confirmar, Marcar Ausência de um agendamento (PATCH em vez de PUT, pois é uma atualização parcial), ou Concluír.
-    // PATCH /api/agendamentos/3/status?novoStatus=CANCELADO.
     @PatchMapping("/{id}/status")
-    public ResponseEntity<String> alterarStatusAgendamento(
-                @PathVariable Long id,
-                @RequestParam String novoStatus) {
+    public ResponseEntity<?> alterarStatusAgendamento(
+            @PathVariable Long id,
+            @RequestParam String novoStatus) {
 
-        // Regra de negócio simples: que pode sewr colocada no Controller, ou Service.
-        Agendamento agendamento = agendamentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
+        try {
+            // A MÁGICA ACONTECE AQUI: O Controller agora manda o Service trabalhar!
+            AgendamentoResponseDTO atualizado = agendamentoService.atualizarStatus(id, novoStatus);
 
-        // Verifica se o status é válido.
-        if (novoStatus.equalsIgnoreCase("CANCELADO") ||
-                novoStatus.equalsIgnoreCase("AUSENTE") ||
-                novoStatus.equalsIgnoreCase("CONFIRMADO") ||
-                novoStatus.equalsIgnoreCase("CONCLUÍDO")) {
+            return ResponseEntity.ok(atualizado);
 
-              agendamento.setStatus(novoStatus.toUpperCase());
-              agendamentoRepository.save(agendamento);
-              return ResponseEntity.ok("Status atualizado para: " + novoStatus.toUpperCase());
-
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-        return ResponseEntity.badRequest().body("Status inválido.");
-
-
     }
 
     // Endpoint para deletar um agendamento pelo ID.
