@@ -28,7 +28,7 @@ public class NotificacaoService {
 
     // Roda TODOS OS DIAS às 08:00 da manhã para evitar que o bot envie notificações duplicadas:
     // @Scheduled(cron = "0 0 8 * * *") // <- Comentando a linha original para funcionalidade de de temporizador de 10 segundos.
-    @Scheduled(fixedRate = 10000)       // <- Adicione o temporizador de 10 segundos para testes na App rodando.
+    @Scheduled(fixedRate = 600000)       // <- Adicione o temporizador de 10 minutos para testes na App rodando.
     public void dispararLembretesDeAgendamento() {
         System.out.println("[WHATSAPP BOT] Iniciando varredura de agendamentos de hoje (" + LocalDate.now() + ")...");
 
@@ -59,7 +59,7 @@ public class NotificacaoService {
     // ------------------------------------------------------------------------
 
     // @Scheduled(cron = "0 0 9 * * *") <- Comentando a linha original para funcionalidade de de temporizador de 10 segundos.
-    @Scheduled(fixedRate = 10000)       // <- Adicione o temporizador de 10 segundos testes na app rodando.
+    @Scheduled(fixedRate = 600000)       // <- Adicione o temporizador de 10 minutos testes na app rodando.
     public void notificarAniversariantes() {
         LocalDate hoje = LocalDate.now();
         System.out.println("[WHATSAPP BOT] Iniciando varredura de aniversariantes do dia (\" + hoje + \")...\"");

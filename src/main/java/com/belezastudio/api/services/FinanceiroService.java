@@ -215,6 +215,23 @@ public class FinanceiroService {
             if (diaGeraComissao) {
                 comissao = produzido.multiply(prof.getPorcentagemComissao()).
                         divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+
+                // =====================================================================================
+                // INJEÇÃO DA AUTOMAÇÃO: Lançar a despesa física no banco (Apenas se a comissão for > 0)
+                if (comissao.compareTo(BigDecimal.ZERO) > 0) {
+                    Financeiro pagamentoComissao = new Financeiro();
+                    pagamentoComissao.setTipo("SAIDA");
+                    pagamentoComissao.setValor(comissao);
+                    pagamentoComissao.setFormaPagamento("SISTEMA");
+                    pagamentoComissao.setDescricao("Fehcmento Diário: Comissão Automática - " + prof.getUsuario().getNome());
+                    pagamentoComissao.setDataLancamento(LocalDateTime.now());
+                    pagamentoComissao.setProfissional(prof); // Vincula a saída ao profissional.
+
+                    financeiroRepository.save(pagamentoComissao);
+
+                }
+
+                // =================================================================================
             }
 
             totalComissoesDevidas = totalComissoesDevidas.add(comissao);

@@ -72,12 +72,20 @@ public class FinanceiroController {
     }
 
     // ROTA GERENCIAL 2: Obter o Fechamento de Caixa de um Dia Específico (Receitas - Despesas).
-    // Exemplo: GET http://localhost:8080/api/financeiro/fechamento-diario?data=2026-06-27
-    @GetMapping("/fechamento-diario")
-    public ResponseEntity<FechamentoDiarioResponseDTO> obterFechamentoDiario(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
-        return ResponseEntity.ok(financeiroService.gerarFechamentoDiario(data));
-    }
+    // Endpoint para realizar o fechamento diário de caixa, considerando todas as entradas e saídas do dia.
+    @PostMapping("/fechamento-diario")
+    public ResponseEntity<FechamentoDiarioResponseDTO> realizarFechamento(
+            @RequestParam(required = false) LocalDate data) {
 
+        try {
+            // Se não enviar data no Postman, ele pega a data de hoje automaticamente.
+            LocalDate dataFechamento = (data != null) ? data : LocalDate.now();
+
+            return ResponseEntity.ok(financeiroService.gerarFechamentoDiario(dataFechamento));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+
+    }
 
 }

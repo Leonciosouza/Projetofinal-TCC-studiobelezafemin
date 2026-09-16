@@ -28,4 +28,8 @@ public interface FinanceiroRepository extends JpaRepository<Financeiro, Long> {
             @Param("inicio") LocalDateTime inicio,
             @Param("fim") LocalDateTime fim
     );
+
+    // Busca todos os lançamentos entre 00:00:00 e 23:59:59 do dia escolhido.
+    @Query("SELECT f FROM Financeiro f WHERE f.dataLancamento >= :inicioDia AND f.dataLancamento <= :fimDia")
+    List<Financeiro> findLancamentosDoDia(@Param("inicioDia") LocalDateTime inicioDia, @Param("fimDia") LocalDateTime fimDia);
 }
