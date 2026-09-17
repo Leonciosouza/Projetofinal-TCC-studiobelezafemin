@@ -68,6 +68,22 @@ public class AgendamentoController {
         }
     }
 
+    // Novo ENDPOINT: Histórico de agendamentos por cliente.
+    @GetMapping("/cliente/{idCliente}")
+    public ResponseEntity<?> buscarHistoricoCliente(@PathVariable Long idCliente) {
+        try {
+            List<AgendamentoResponseDTO> historico = agendamentoService.listarHistoricoCliente(idCliente);
+
+            // Se a lista estiver vazia, retonra um 204 No Content (Requsição OK, ma sem dados)
+            if (historico.isEmpty()) {
+                return ResponseEntity.noContent().build();
+            }
+            return ResponseEntity.ok(historico);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
     // Endpoint para deletar um agendamento pelo ID.
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletar(@PathVariable Long id) {

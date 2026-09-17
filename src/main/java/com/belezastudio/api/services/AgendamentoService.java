@@ -143,6 +143,19 @@ public class AgendamentoService {
         return converterParaDTO(atualizado);
     }
 
+    // NOVO MÉTODO: Listar histórico completo de um cliente específico(do antigo para o mais recente).
+    public List<AgendamentoResponseDTO> listarHistoricoCliente(Long idCliente) {
+        // 1. Trava de segurança: Verifica se o cliente existe no banco antes de buscar a agenda.
+        if (!usuarioRepository.existsById(idCliente)) {
+            throw new RuntimeException("Cliente não encontrado para o ID informado.");
+        }
+
+        // 2. Busca no repositório e converte a lista de Entidades para a listar de DTOs.
+        return agendamentoRepository.findHistoricoByCliente(idCliente).stream()
+                .map(this::converterParaDTO)
+                .collect(Collectors.toList());
+    }
+
     // DELETE: Cancelar agendamento fisicamente do banco (Status = "CANCELADO").
     public void deletarAgendamento(Long id) {
         if (!agendamentoRepository.existsById(id)) {

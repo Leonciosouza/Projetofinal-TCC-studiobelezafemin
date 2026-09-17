@@ -32,4 +32,8 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             @Param("horaInicio") LocalTime horaInicio,
             @Param("horaFim") LocalTime horaFim);
 
+    // NOVO MÉTODO: Buscar o histórico de um cliente ordenado do mais recente para o mais antigo.
+    @Query("SELECT a FROM Agendamento a WHERE a.cliente.idUsuario = :idCliente ORDER BY a.dataAtendimento DESC, a.horaInicio DESC")
+    List<Agendamento> findHistoricoByCliente(@Param("idCliente") Long idCliente);
+
 }
